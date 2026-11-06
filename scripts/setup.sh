@@ -34,7 +34,14 @@ echo "==> Checking Cloudflare login"
 $WRANGLER whoami >/dev/null || { echo "Run: $WRANGLER login" >&2; exit 1; }
 
 echo "==> Creating R2 bucket '$BUCKET' (skipped if it exists)"
-$WRANGLER r2 bucket create "$BUCKET" 2>&1 | grep -viE "telemetry" || true
+if out=$($WRANGLER r2 bucket create "$BUCKET" 2>&1); then
+  echo "    created"
+elif echo "$out" | grep -qi "already exists"; then
+  echo "    already exists, using it"
+else
+  echo "$out" >&2
+  exit 1
+fi
 
 if [ "$RETENTION_DAYS" != "0" ]; then
   echo "==> Expiring stored mail after $RETENTION_DAYS days"
@@ -55,12 +62,18 @@ if [ -n "${ADDRESS:-}" ] && [ -n "${ZONE_ID:-}" ] && [ -n "${CLOUDFLARE_API_TOKE
     echo "Enable it once in the dashboard (Email > Email Routing), then re-run this script." >&2
     exit 1
   fi
+  existing=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/rules?per_page=50" \
+    | ADDRESS="$ADDRESS" python3 -I -c "import json,os,sys; a=os.environ['ADDRESS'].lower(); print(sum(1 for r in json.load(sys.stdin)['result'] for m in r['matchers'] if m.get('value','').lower()==a))")
+  if [ "$existing" != "0" ]; then
+    echo "    a rule for $ADDRESS already exists, leaving it as is"
+  else
   curl -fsS -X POST "$api/rules" \
     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
     -d "{\"name\":\"$ADDRESS -> r2-mailbox\",\"enabled\":true,
          \"matchers\":[{\"type\":\"literal\",\"field\":\"to\",\"value\":\"$ADDRESS\"}],
          \"actions\":[{\"type\":\"worker\",\"value\":[\"r2-mailbox\"]}]}" \
     | python3 -I -c "import json,sys; d=json.load(sys.stdin); print('rule created' if d['success'] else d['errors'])"
+  fi
 else
   cat <<EOF
 

@@ -234,6 +234,9 @@ Check that the routing rule exists and points to the `r2-mailbox` Worker. Then r
 Email from one sender never arrives:
 Email Routing drops email that fails DMARC when the sender's domain asks for that (a `reject` or `quarantine` policy). This happens before the Worker runs, so there is nothing in the logs. If you set `ALLOWED_SENDERS`, also check the sender is on the list.
 
+I do not see any logs for the Worker:
+Live logs (`npm run tail`, or the Live tab in the dashboard) only show emails that arrive while they are open. Saved logs are under the Worker's Observability tab and can take a minute or two to show up. For a list of every email and which rule handled it, look at your domain's Email Routing Activity log. If you have more than one Worker, make sure you are looking at `r2-mailbox`.
+
 `R2 returned 403`:
 The key is wrong, expired, or not allowed to read this bucket. Make sure you used the 32-character Access Key ID and not the token value that starts with `cf`.
 
