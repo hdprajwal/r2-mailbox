@@ -18,7 +18,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 BUCKET="${BUCKET:-r2-mailbox}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
-WRANGLER="${WRANGLER:-npx --yes wrangler@latest}"
+# Use the project's pinned wrangler (npm install) if present, else the latest from npm.
+if [ -x node_modules/.bin/wrangler ]; then
+  WRANGLER="${WRANGLER:-node_modules/.bin/wrangler}"
+else
+  WRANGLER="${WRANGLER:-npx --yes wrangler@latest}"
+fi
 
 if ! grep -q "\"bucket_name\": \"$BUCKET\"" worker/wrangler.jsonc; then
   echo "worker/wrangler.jsonc does not use bucket_name \"$BUCKET\". Edit it first." >&2
@@ -38,7 +43,7 @@ if [ "$RETENTION_DAYS" != "0" ]; then
 fi
 
 echo "==> Deploying the Worker"
-(cd worker && $WRANGLER deploy)
+$WRANGLER deploy --config worker/wrangler.jsonc
 
 if [ -n "${ADDRESS:-}" ] && [ -n "${ZONE_ID:-}" ] && [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
   echo "==> Routing $ADDRESS to the Worker"

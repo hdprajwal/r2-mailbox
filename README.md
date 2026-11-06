@@ -35,7 +35,7 @@ The Worker has no secrets of its own. It writes to R2 through a binding, which C
 - A Cloudflare account. The free plan works.
 - A domain with its DNS on Cloudflare. A `*.workers.dev` or `*.pages.dev` address cannot receive email.
 - R2 turned on for your account. You do this once in the dashboard under R2.
-- Node.js, so you can run `npx wrangler`.
+- Node.js 20 or newer, for Wrangler (Cloudflare's command-line tool).
 - Python 3.9 or newer for the reader. It uses only the standard library, so there is nothing to install.
 
 One warning before you start. If your domain already gets email somewhere else, like Google Workspace or Fastmail, do not turn on Email Routing for the main domain. It replaces your MX records and your normal email will stop arriving. Use a subdomain instead, like `mail.yourdomain.com`. You can add one under Email Routing, Settings, Subdomains.
@@ -49,8 +49,11 @@ This takes about 15 minutes.
 ```bash
 git clone https://github.com/hdprajwal/r2-mailbox.git
 cd r2-mailbox
+npm install
 npx wrangler login
 ```
+
+`npm install` installs a pinned version of Wrangler and the Cloudflare type definitions. The setup script uses that Wrangler if it is there.
 
 If your login has more than one Cloudflare account, `wrangler whoami` lists them. Either set `account_id` in `worker/wrangler.jsonc` or export `CLOUDFLARE_ACCOUNT_ID`.
 
@@ -61,10 +64,10 @@ In the Cloudflare dashboard, open your domain, then Email, then Email Routing, a
 ### 3. Create the bucket and deploy the Worker
 
 ```bash
-./scripts/setup.sh
+npm run setup
 ```
 
-This does three things:
+This runs `scripts/setup.sh`, which does three things:
 
 1. Creates an R2 bucket called `r2-mailbox`.
 2. Adds a rule that deletes stored emails after 30 days. Set `RETENTION_DAYS=0` to keep them forever, or another number to change it.
@@ -112,7 +115,7 @@ Then fill in `account_id`, `access_key_id`, and `secret_access_key`. Your accoun
 Check that it works:
 
 ```bash
-python3 reader/mailbox.py check
+python3 reader/mailbox.py check     # or: npm run check
 ```
 
 ### 6. Send a test email
@@ -191,7 +194,7 @@ aws s3 ls s3://r2-mailbox/mail/ --recursive \
 You can change how the Worker behaves with these settings in `worker/wrangler.jsonc`, under `vars`. Deploy again after you change them:
 
 ```bash
-cd worker && npx wrangler deploy
+npm run deploy
 ```
 
 | Setting | Default | What it does |
@@ -226,7 +229,7 @@ Email Routing is free. A personal inbox uses very little Worker time and storage
 ## Troubleshooting
 
 Nothing shows up after a test email:
-Check that the routing rule exists and points to the `r2-mailbox` Worker. Then run `cd worker && npx wrangler tail` and send the test again. You will see the Worker run, or an error if something is wrong.
+Check that the routing rule exists and points to the `r2-mailbox` Worker. Then run `npm run tail` and send the test again. You will see the Worker run, or an error if something is wrong.
 
 Email from one sender never arrives:
 Email Routing drops email that fails DMARC when the sender's domain asks for that (a `reject` or `quarantine` policy). This happens before the Worker runs, so there is nothing in the logs. If you set `ALLOWED_SENDERS`, also check the sender is on the list.
@@ -240,6 +243,15 @@ Set `account_id` in `worker/wrangler.jsonc`, or export `CLOUDFLARE_ACCOUNT_ID`.
 My normal email stopped arriving after I turned on Email Routing:
 Email Routing replaced your domain's MX records. Put your old email provider's MX records back, and use a subdomain for r2-mailbox instead.
 
+## Working on the code
+
+```bash
+npm install
+npm run typecheck    # type-check the Worker against Cloudflare's types
+npm run deploy       # deploy the Worker
+npm run tail         # watch the Worker's logs live
+```
+
 ## Project layout
 
 ```
@@ -248,7 +260,14 @@ worker/wrangler.jsonc   Worker config: bucket binding and options
 reader/mailbox.py       command-line reader (Python standard library only)
 scripts/setup.sh        creates the bucket, the delete rule, deploys, and optionally adds the routing rule
 config.example.json     template for the reader config
+package.json            pinned Wrangler and TypeScript, plus npm scripts
+tsconfig.json           TypeScript settings for the Worker
+SECURITY.md             how to report a security problem
 ```
+
+## Security
+
+If you find a security problem, please report it privately. See [SECURITY.md](SECURITY.md).
 
 ## License
 
