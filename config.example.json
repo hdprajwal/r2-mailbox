@@ -1,0 +1,7 @@
+{
+  "account_id": "your-cloudflare-account-id",
+  "bucket": "r2-mailbox",
+  "access_key_id": "32-character R2 Access Key ID",
+  "secret_access_key": "64-character R2 Secret Access Key",
+  "prefix": "mail"
+}

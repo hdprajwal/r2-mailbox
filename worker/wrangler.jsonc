@@ -1,0 +1,24 @@
+{
+  // r2-mailbox Email Worker. Only Email Routing can invoke it: no fetch handler,
+  // no workers.dev URL, no preview URLs, no routes.
+  "name": "r2-mailbox",
+  "main": "src/index.ts",
+  // Uncomment if your login has more than one account (wrangler whoami lists them),
+  // or set CLOUDFLARE_ACCOUNT_ID instead.
+  // "account_id": "<your account id>",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "r2_buckets": [
+    // Change bucket_name if you created the bucket under another name.
+    { "binding": "MAILBOX", "bucket_name": "r2-mailbox" }
+  ],
+  "vars": {
+    // All optional. Leave empty to accept everything routed to this Worker.
+    "ALLOWED_SENDERS": "",   // e.g. "@substack.com,dan@tldrnewsletter.com"
+    "REQUIRE_DMARC": "false", // "true" rejects mail that fails DMARC
+    "FORWARD_TO": "",         // a verified Email Routing destination to copy mail to
+    "PREFIX": "mail"
+  },
+  "observability": { "enabled": true }
+}

@@ -1,0 +1,6 @@
+.wrangler/
+node_modules/
+.dev.vars
+*.eml
+__pycache__/
+config.json
