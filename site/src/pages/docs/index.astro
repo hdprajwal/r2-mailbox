@@ -1,0 +1,9 @@
+---
+import { getEntry } from 'astro:content';
+import DocPage from '../../components/DocPage.astro';
+
+const entry = await getEntry('docs', 'readme');
+if (!entry) throw new Error('docs/README.md is missing');
+---
+
+<DocPage entry={entry} path="README" />

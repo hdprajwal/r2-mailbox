@@ -1,0 +1,344 @@
+---
+import { Code } from 'astro:components';
+import * as lucide from 'lucide-static';
+import Base from '../layouts/Base.astro';
+import { REPO_URL } from '../lib/routes.mjs';
+import { renderDiagram } from '../lib/diagrams/render.mjs';
+import { diagrams } from '../lib/diagrams/specs.mjs';
+
+// Lucide icons as inline SVG, at the stroke weight the diagrams use.
+const icon = (name: keyof typeof lucide, cls = 'h-4 w-4') =>
+  (lucide[name] as string)
+    .replace('<svg', `<svg aria-hidden="true" class="${cls}"`)
+    .replace(/stroke-width="2"/, 'stroke-width="1.5"');
+
+const themes = { light: 'github-light-default', dark: 'github-dark-default' };
+
+// Sample output of `mailbox.py list`, shown in the hero terminal.
+// The senders are made up.
+const inbox = [
+  { time: '06:58', from: 'Dev Weekly', subject: 'Issue 212: queues, caches, and you' },
+  { time: '07:14', from: 'Status Alerts', subject: 'Resolved: elevated API errors' },
+  { time: '07:31', from: 'Acme Billing', subject: 'Your November receipt' },
+  { time: '07:40', from: 'Signups', subject: 'Confirm your subscription' },
+];
+
+const facts = [
+  { icon: 'GlobeLock', label: 'No public URL', detail: 'Only Email Routing can run the Worker' },
+  { icon: 'KeyRound', label: 'Read-only key', detail: 'Scoped to one bucket' },
+  { icon: 'Timer', label: 'About 15 minutes', detail: 'One setup script' },
+  { icon: 'Wallet', label: 'Free plans', detail: 'Email Routing, Workers, R2' },
+] as const;
+
+const exportCmd = `python3 reader/mailbox.py export --hours 24 -o mail.json`;
+
+const exportJson = `{
+  "count": 1,
+  "messages": [{
+    "from": "Dev Weekly <hi@devweekly.example>",
+    "subject": "Issue 212: queues, caches, and you",
+    "dmarc": "pass",
+    "links": [{ "url": "https://…", "text": "Read online" }],
+    "text": "This week: three ways to …"
+  }]
+}`;
+
+const primary =
+  'bg-foreground-strong text-background hover:bg-foreground-soft text-meta inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 font-medium transition-[background-color,scale] duration-160 ease-out active:scale-[0.97]';
+const secondary =
+  'border-border text-foreground-strong hover:border-foreground text-meta bg-background inline-flex items-center gap-1.5 rounded-md border px-3.5 py-2 transition-[border-color,scale] duration-160 ease-out active:scale-[0.97]';
+const textLink =
+  'text-foreground text-meta decoration-accent-link inline-flex items-center gap-1 underline underline-offset-4 transition-colors hover:decoration-current';
+---
+
+<Base
+  title="r2-mailbox"
+  description="An email address on your own domain that saves every email to Cloudflare R2, so scripts and AI agents can read it with a read-only key."
+>
+  <!-- Hero: the pitch on the left, the inbox your code reads on the right. -->
+  <section
+    class="grid items-center gap-12 pt-16 pb-14 md:pt-24 lg:grid-cols-[1fr_1.05fr] lg:gap-16"
+  >
+    <div>
+      <a
+        href="/docs/how-it-works/"
+        class="border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 text-meta bg-background mb-6 inline-flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 transition-colors"
+      >
+        <span
+          class="bg-accent text-foreground-strong rounded-full px-2 py-0.5 font-medium"
+          >Cloudflare</span
+        >
+        Email Routing, Workers, and R2
+        <span aria-hidden="true">→</span>
+      </a>
+      <h1
+        class="text-foreground-strong text-[2.5rem] leading-[1.05] font-semibold tracking-[-0.04em] text-balance md:text-[3.5rem]"
+      >
+        Give your agent its own inbox.
+      </h1>
+      <p class="text-foreground-soft mt-5 max-w-md text-pretty">
+        An email address on your domain that saves every email to R2. Your
+        scripts read it with a key that can’t do anything else.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center gap-2">
+        <a href="/docs/getting-started/" class={primary}>
+          Set it up <span aria-hidden="true">→</span>
+        </a>
+        <a href={REPO_URL} target="_blank" rel="noopener noreferrer" class={secondary}>
+          <svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="relative">
+      <div
+        aria-hidden="true"
+        class="hero-glow pointer-events-none absolute -inset-8 -z-10 rounded-[2rem]"
+      >
+      </div>
+      <div
+        class="border-border bg-background overflow-hidden rounded-lg border shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.12)]"
+        role="img"
+        aria-label="A terminal running the reader’s list command. Four emails from the last 24 hours appear one by one: a newsletter issue, a resolved status alert, a receipt, and a signup confirmation."
+      >
+        <div class="border-border bg-muted flex items-center gap-1.5 border-b px-3 py-2.5">
+          <span class="bg-border h-2.5 w-2.5 rounded-full"></span>
+          <span class="bg-border h-2.5 w-2.5 rounded-full"></span>
+          <span class="bg-border h-2.5 w-2.5 rounded-full"></span>
+          <span class="text-muted-foreground text-meta ml-2 font-mono">~/r2-mailbox</span>
+        </div>
+        <div class="px-4 py-4 font-mono text-[0.8125rem] leading-relaxed">
+          <div class="text-foreground-strong">
+            <span class="text-muted-foreground select-none">$ </span>python3
+            reader/mailbox.py list
+          </div>
+          <ul class="mt-3 flex flex-col gap-1.5">
+            {
+              inbox.map((m, i) => (
+                <li
+                  class="inbox-row border-border bg-muted/60 grid grid-cols-[3.25rem_1fr] items-baseline gap-x-3 rounded-md border px-3 py-2 sm:grid-cols-[3.25rem_7.5rem_1fr]"
+                  style={`--i:${i}`}
+                >
+                  <span class="text-muted-foreground">{m.time}</span>
+                  <span class="text-foreground-strong truncate">{m.from}</span>
+                  <span class="text-foreground-soft col-start-2 truncate sm:col-start-3">
+                    {m.subject}
+                  </span>
+                </li>
+              ))
+            }
+          </ul>
+          <div class="text-muted-foreground mt-3">
+            <span class="select-none">$ </span><span class="caret">▍</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Four facts, one line each. -->
+  <section aria-label="At a glance" class="pb-20">
+    <ul
+      class="border-border bg-border grid gap-px overflow-hidden rounded-lg border sm:grid-cols-2 lg:grid-cols-4"
+    >
+      {
+        facts.map((f) => (
+          <li class="bg-background flex items-start gap-3 px-5 py-4">
+            <span class="text-foreground-strong border-border bg-muted mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md border">
+              <Fragment set:html={icon(f.icon)} />
+            </span>
+            <span>
+              <span class="text-foreground-strong text-title block">{f.label}</span>
+              <span class="text-muted-foreground text-meta block">{f.detail}</span>
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <!-- The architecture, as the same live diagram the docs use. -->
+  <section class="pb-20">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <div class="text-muted-foreground text-eyebrow mb-2">How it works</div>
+        <h2 class="text-foreground-strong text-display">Mail in, files out</h2>
+      </div>
+      <a href="/docs/how-it-works/" class={textLink}>
+        Read how it works <span aria-hidden="true">→</span>
+      </a>
+    </div>
+    <div class="landing-diagram">
+      <Fragment set:html={renderDiagram(diagrams.mailFlow)} />
+    </div>
+  </section>
+
+  <!-- Three ideas, each with a small visual instead of a paragraph. -->
+  <section class="grid gap-4 pb-20 md:grid-cols-3">
+    <article class="border-border flex flex-col rounded-lg border p-5">
+      <div class="text-foreground-strong mb-4 flex items-center gap-2">
+        <Fragment set:html={icon('ShieldCheck')} />
+        <h3 class="text-title">Private by default</h3>
+      </div>
+      <div class="border-border bg-muted mb-4 flex flex-col gap-1.5 rounded-md border p-3 font-mono text-[0.75rem]">
+        <div class="flex justify-between gap-2">
+          <span class="text-muted-foreground">workers_dev</span>
+          <span class="text-foreground-strong">false</span>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-muted-foreground">fetch handler</span>
+          <span class="text-foreground-strong">none</span>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-muted-foreground">read key</span>
+          <span class="text-foreground-strong">1 bucket, read only</span>
+        </div>
+      </div>
+      <p class="text-muted-foreground text-subtitle mt-auto">
+        Nobody can call the Worker, and a leaked key can only read mail.
+      </p>
+    </article>
+
+    <article class="border-border flex flex-col rounded-lg border p-5">
+      <div class="text-foreground-strong mb-4 flex items-center gap-2">
+        <Fragment set:html={icon('Filter')} />
+        <h3 class="text-title">Only the mail you expect</h3>
+      </div>
+      <div class="mb-4 flex flex-wrap gap-1.5 font-mono text-[0.75rem]">
+        <span class="border-border bg-muted text-foreground-strong rounded-md border px-2 py-1">@substack.com</span>
+        <span class="border-border bg-muted text-foreground-strong rounded-md border px-2 py-1">alerts@example.com</span>
+        <span class="border-border text-muted-foreground rounded-md border border-dashed px-2 py-1 line-through">anyone else</span>
+        <span class="text-foreground-strong rounded-md border border-(--success)/40 bg-(--success)/10 px-2 py-1">dmarc=pass</span>
+      </div>
+      <p class="text-muted-foreground text-subtitle mt-auto">
+        Allow listed senders and require DMARC. Everything else bounces.
+      </p>
+    </article>
+
+    <article class="border-border flex flex-col rounded-lg border p-5">
+      <div class="text-foreground-strong mb-4 flex items-center gap-2">
+        <Fragment set:html={icon('FileText')} />
+        <h3 class="text-title">Plain files you own</h3>
+      </div>
+      <div class="border-border bg-muted mb-4 rounded-md border p-3 font-mono text-[0.75rem] leading-relaxed">
+        <div class="text-muted-foreground">r2-mailbox/mail/</div>
+        <div class="text-muted-foreground pl-3">2026-11-17/</div>
+        <div class="text-foreground-strong truncate pl-6">06:58:12Z-1b9d….eml</div>
+        <div class="text-foreground-strong truncate pl-6">07:14:40Z-7c2e….eml</div>
+      </div>
+      <p class="text-muted-foreground text-subtitle mt-auto">
+        One <code class="font-mono">.eml</code> per email. Open it with the
+        reader, any S3 tool, or any email app.
+      </p>
+    </article>
+  </section>
+
+  <!-- What your code actually gets. -->
+  <section class="border-border bg-muted/50 mb-20 grid gap-10 rounded-lg border p-6 md:p-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+    <div>
+      <div class="text-muted-foreground text-eyebrow mb-2">For scripts and agents</div>
+      <h2 class="text-foreground-strong text-display">One command to JSON</h2>
+      <ul class="mt-6 flex flex-col gap-3">
+        {
+          [
+            'Text pulled out of HTML emails',
+            'Every link, with the text it was attached to',
+            'The DMARC result, so you can skip fakes',
+          ].map((item) => (
+            <li class="text-foreground flex items-start gap-2.5">
+              <span class="text-(--success) mt-1 shrink-0">
+                <Fragment set:html={icon('Check')} />
+              </span>
+              {item}
+            </li>
+          ))
+        }
+      </ul>
+      <a href="/docs/agents-and-scripts/" class:list={[textLink, 'mt-6']}>
+        Send mail to an agent <span aria-hidden="true">→</span>
+      </a>
+    </div>
+    <div class="code-panel landing-code flex min-w-0 flex-col gap-2">
+      <Code code={exportCmd} lang="bash" themes={themes} defaultColor={false} />
+      <Code code={exportJson} lang="json" themes={themes} defaultColor={false} />
+    </div>
+  </section>
+
+  <!-- Closing call to action. -->
+  <section class="mb-20 text-center">
+    <h2 class="text-foreground-strong text-display text-balance">
+      Set up in about 15 minutes.
+    </h2>
+    <p class="text-muted-foreground mx-auto mt-3 max-w-sm text-pretty">
+      Clone, run one script, route an address, and create a read-only key.
+    </p>
+    <div class="mt-7 flex flex-wrap items-center justify-center gap-2">
+      <a href="/docs/" class={primary}>
+        Read the docs <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* A soft wash behind the terminal, in the site's link accent. */
+  .hero-glow {
+    background: radial-gradient(
+      60% 60% at 70% 40%,
+      color-mix(in oklab, var(--accent-link) 14%, transparent),
+      transparent 70%
+    );
+  }
+
+  /* Emails arrive one after another, then the caret blinks. */
+  .inbox-row {
+    animation: arrive 420ms var(--ease-out) both;
+    animation-delay: calc(400ms + var(--i) * 450ms);
+  }
+  @keyframes arrive {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  .caret {
+    animation: blink 1.1s steps(1) infinite;
+  }
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .inbox-row,
+    .caret {
+      animation: none;
+    }
+  }
+
+  .landing-diagram :global(.stack-diagram) {
+    margin: 0;
+    border-radius: var(--radius-lg, 0.5rem);
+  }
+  /* The diagram is 640px wide. On the landing page, shrink it to fit narrow
+     screens instead of scrolling sideways (each step fits its whole range). */
+  @media (max-width: 679px) {
+    .landing-diagram :global(.sd-canvas) {
+      zoom: 0.75;
+    }
+  }
+  @media (max-width: 519px) {
+    .landing-diagram :global(.sd-canvas) {
+      zoom: 0.6;
+    }
+  }
+  @media (max-width: 419px) {
+    .landing-diagram :global(.sd-canvas) {
+      zoom: 0.52;
+    }
+  }
+  .landing-code :global(pre) {
+    margin: 0;
+  }
+</style>

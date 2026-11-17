@@ -1,0 +1,26 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import DocPage from '../../components/DocPage.astro';
+
+// One page per docs/ file except README.md, which is the docs overview.
+export async function getStaticPaths() {
+  const docs = await getCollection('docs');
+  return docs
+    .filter((entry) => entry.filePath && !/README\.md$/.test(entry.filePath))
+    .map((entry) => {
+      const path = entry
+        .filePath!.replace(/^.*?docs\//, '')
+        .replace(/\.md$/, '');
+      return { params: { slug: path }, props: { entry, path } };
+    });
+}
+
+interface Props {
+  entry: CollectionEntry<'docs'>;
+  path: string;
+}
+
+const { entry, path } = Astro.props;
+---
+
+<DocPage entry={entry} path={path} />
