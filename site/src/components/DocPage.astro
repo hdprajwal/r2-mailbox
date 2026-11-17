@@ -1,0 +1,162 @@
+---
+import { render, type CollectionEntry } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Sidebar from './Sidebar.astro';
+import { order, sections, pageUrl } from '../lib/nav';
+
+interface Props {
+  entry: CollectionEntry<'docs'>;
+  /** docs/ path without .md, such as "reference/reader" */
+  path: string;
+}
+
+const { entry, path } = Astro.props;
+const { Content, headings } = await render(entry);
+const title = headings.find((h) => h.depth === 1)?.text ?? 'r2-mailbox';
+const toc = headings.filter((h) => h.depth === 2);
+// First paragraph of the page, used as the meta description.
+const description = entry.body
+  ?.split('\n')
+  .find((line) => line.trim() && !line.startsWith('#'))
+  ?.replace(/[`*_\[\]]|\(([^)]*)\)/g, '')
+  .slice(0, 200);
+
+const i = order.findIndex((p) => p.id === path);
+const prev = i > 0 ? order[i - 1] : null;
+const next = i >= 0 && i < order.length - 1 ? order[i + 1] : null;
+const section = sections.find((s) => s.pages.some((p) => p.id === path));
+---
+
+<Base title={path === 'README' ? 'Docs' : title} description={description}>
+  <div class="flex gap-10">
+    <aside class="hidden w-52 shrink-0 md:block">
+      <div
+        class="sticky top-14 -ml-2.5 max-h-[calc(100vh-3.5rem)] overflow-y-auto py-10"
+      >
+        <Sidebar current={path} />
+      </div>
+    </aside>
+
+    <div class="min-w-0 flex-1 py-10 md:py-12">
+      <details class="docs-menu border-border mb-8 rounded-md border md:hidden">
+        <summary
+          class="text-meta text-foreground-strong flex cursor-pointer list-none items-center justify-between px-3 py-2"
+        >
+          <span>
+            <span class="text-muted-foreground">{section?.label} /</span>{' '}
+            {order[i]?.label}
+          </span>
+          <svg
+            aria-hidden="true"
+            class="chevron h-3.5 w-3.5 transition-transform duration-200"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg
+          >
+        </summary>
+        <div class="border-border border-t px-0.5 py-4">
+          <Sidebar current={path} />
+        </div>
+      </details>
+
+      <div class="mx-auto max-w-2xl">
+        <div class="text-muted-foreground text-eyebrow mb-3">
+          {section?.label}
+        </div>
+        <article class="typeset typeset-notes min-w-0">
+          <Content />
+        </article>
+
+        <hr class="border-border my-10" />
+        <div class="grid gap-4 sm:grid-cols-2">
+          {
+            prev ? (
+              <a
+                href={pageUrl(prev.id)}
+                class="group border-border hover:border-foreground/30 rounded-md border px-4 py-3 transition-colors"
+              >
+                <div class="text-muted-foreground text-eyebrow mb-1">
+                  ← Previous
+                </div>
+                <div class="text-foreground-strong text-title">
+                  {prev.label}
+                </div>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next && (
+              <a
+                href={pageUrl(next.id)}
+                class="group border-border hover:border-foreground/30 rounded-md border px-4 py-3 text-right transition-colors"
+              >
+                <div class="text-muted-foreground text-eyebrow mb-1">
+                  Next →
+                </div>
+                <div class="text-foreground-strong text-title">
+                  {next.label}
+                </div>
+              </a>
+            )
+          }
+        </div>
+      </div>
+    </div>
+
+    {
+      toc.length > 1 && (
+        <aside class="hidden w-48 shrink-0 xl:block">
+          <div class="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto py-12">
+            <div class="text-muted-foreground text-eyebrow mb-3">
+              On this page
+            </div>
+            <ul class="border-border flex flex-col gap-2 border-l">
+              {toc.map((h) => (
+                <li>
+                  <a
+                    href={`#${h.slug}`}
+                    data-toc={h.slug}
+                    class="toc-link text-meta text-muted-foreground hover:text-foreground -ml-px block border-l border-transparent pl-3 transition-colors"
+                  >
+                    {h.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+      )
+    }
+  </div>
+</Base>
+
+<script>
+  // Highlight the table of contents entry for the section being read.
+  const links = new Map(
+    [...document.querySelectorAll<HTMLAnchorElement>('.toc-link')].map((a) => [
+      a.dataset.toc!,
+      a,
+    ])
+  );
+  const headings = [...links.keys()]
+    .map((id) => document.getElementById(id))
+    .filter((h): h is HTMLElement => h !== null);
+
+  function update() {
+    let current = headings[0];
+    for (const h of headings) {
+      if (h.getBoundingClientRect().top < 120) current = h;
+    }
+    links.forEach((a, id) => a.classList.toggle('active', id === current?.id));
+  }
+
+  if (headings.length) {
+    update();
+    addEventListener('scroll', update, { passive: true });
+  }
+</script>

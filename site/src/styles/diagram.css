@@ -1,0 +1,182 @@
+/* Stack diagrams (src/lib/diagrams). Same look as the portfolio's
+   StackDiagram: the link accent for the main flow, Cloudflare orange for
+   vendor groups, fills mixed into the page background so the dot grid never
+   sits behind group text. Plain CSS so the PNG renderer can reuse it. */
+.stack-diagram {
+  --sd-accent: var(--accent-link);
+  --sd-accent-fill: color-mix(in oklab, var(--sd-accent) 6%, var(--background));
+  --sd-accent-border: color-mix(in oklab, var(--sd-accent) 35%, var(--background));
+  --sd-vendor: oklch(0.7 0.17 52);
+  --sd-vendor-fill: color-mix(in oklab, var(--sd-vendor) 6%, var(--background));
+  --sd-vendor-border: color-mix(in oklab, var(--sd-vendor) 40%, var(--background));
+  --sd-dot: color-mix(in oklab, var(--muted-foreground) 14%, transparent);
+
+  margin: 1.75rem 0 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  background: var(--background);
+}
+.dark .stack-diagram {
+  --sd-accent-fill: color-mix(in oklab, var(--sd-accent) 12%, var(--background));
+  --sd-accent-border: color-mix(in oklab, var(--sd-accent) 45%, var(--background));
+  --sd-vendor: oklch(0.74 0.16 55);
+  --sd-vendor-fill: color-mix(in oklab, var(--sd-vendor) 10%, var(--background));
+  --sd-vendor-border: color-mix(in oklab, var(--sd-vendor) 45%, var(--background));
+}
+
+.stack-diagram .sd-scroll {
+  overflow-x: auto;
+}
+/* The grid layer is at least as wide as the canvas, so the dots scroll with
+   the content on narrow screens. */
+.stack-diagram .sd-grid {
+  width: max-content;
+  min-width: 100%;
+  background-image: radial-gradient(
+    circle,
+    var(--sd-dot) 0.75px,
+    transparent 1.25px
+  );
+  background-size: 20px 20px;
+}
+.stack-diagram .sd-canvas {
+  position: relative;
+  margin-inline: auto;
+}
+
+.stack-diagram .sd-group {
+  position: absolute;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+}
+.stack-diagram .sd-vendor {
+  border-color: var(--sd-vendor-border);
+  background: var(--sd-vendor-fill);
+}
+.stack-diagram .sd-accent {
+  border-color: var(--sd-accent-border);
+  background: var(--sd-accent-fill);
+}
+.stack-diagram .sd-group-label {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  font-size: var(--text-size-eyebrow);
+  line-height: 1.4;
+  letter-spacing: 0.16em;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.stack-diagram .sd-group-icon {
+  width: 14px;
+  height: 14px;
+}
+.stack-diagram .sd-group-icon.sd-wide {
+  width: 28px;
+}
+
+.stack-diagram .sd-edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.stack-diagram .sd-stroke-accent {
+  stroke: var(--sd-accent);
+}
+.stack-diagram .sd-stroke-muted {
+  stroke: var(--muted-foreground);
+}
+.stack-diagram .sd-fill-accent {
+  fill: var(--sd-accent);
+}
+.stack-diagram .sd-fill-muted {
+  fill: var(--muted-foreground);
+}
+/* Labels get a halo in the page colour so a line under them stays readable. */
+.stack-diagram .sd-edge-label {
+  fill: var(--muted-foreground);
+  font-size: var(--text-size-meta);
+  paint-order: stroke;
+  stroke: var(--background);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.stack-diagram .sd-node {
+  position: absolute;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  white-space: nowrap;
+}
+.stack-diagram .sd-tile {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--foreground);
+}
+.stack-diagram .sd-tile-icon.sd-line {
+  width: 20px;
+  height: 20px;
+}
+.stack-diagram .sd-tile-icon.sd-brand {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.stack-diagram .sd-tile-icon.sd-wide {
+  width: 32px;
+  height: 16px;
+}
+.stack-diagram .sd-name {
+  margin-top: 8px;
+  color: var(--foreground-strong);
+  font-size: var(--text-size-title);
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+.stack-diagram .sd-role {
+  color: var(--muted-foreground);
+  font-size: var(--text-size-meta);
+  line-height: 1.4;
+}
+.stack-diagram .sd-code {
+  font-family: var(--font-mono);
+}
+
+.stack-diagram .sd-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 24px;
+  min-height: 36px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in oklab, var(--muted) 40%, var(--background));
+  color: var(--muted-foreground);
+  font-size: var(--text-size-meta);
+  line-height: 1.4;
+}
+.stack-diagram .sd-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

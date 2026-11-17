@@ -1,0 +1,42 @@
+---
+import { sections, pageUrl } from '../lib/nav';
+
+interface Props {
+  current: string;
+}
+
+const { current } = Astro.props;
+---
+
+<nav aria-label="Docs" class="flex flex-col gap-6">
+  {
+    sections.map((section) => (
+      <div>
+        <div class="text-muted-foreground text-eyebrow mb-2 px-2.5">
+          {section.label}
+        </div>
+        <ul class="flex flex-col gap-0.5">
+          {section.pages.map((page) => {
+            const active = page.id === current;
+            return (
+              <li>
+                <a
+                  href={pageUrl(page.id)}
+                  aria-current={active ? 'page' : undefined}
+                  class:list={[
+                    'text-subtitle block rounded-md px-2.5 py-1 transition-colors',
+                    active
+                      ? 'bg-accent text-foreground-strong font-medium'
+                      : 'text-muted-foreground hover:text-foreground',
+                  ]}
+                >
+                  {page.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    ))
+  }
+</nav>
